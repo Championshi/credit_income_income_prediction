@@ -564,54 +564,58 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-def make_prediction():
-    bucket_name = "creditapplipred"
-    key = "gradient_boosting_model.sav"
 
-    client = boto3.client(
-        "s3",
-        aws_access_key_id=st.secrets["access_key"],
-        aws_secret_access_key=st.secrets["secret_access_key"],
-    )
+import logging
+import joblib
+import streamlit as st
+from streamlit_lottie import st_lottie_spinner
+import requests
 
-    try:
-        # Test S3 access
-        logger.info(f"Attempting to list objects in {bucket_name}")
-        response = client.list_objects_v2(Bucket=bucket_name, MaxKeys=1)
-        logger.info("Successfully listed bucket contents")
-
-        logger.info(f"Attempting to download {key} from {bucket_name}")
-        with tempfile.TemporaryFile() as fp:
-            client.download_fileobj(Fileobj=fp, Bucket=bucket_name, Key=key)
-            logger.info("Successfully downloaded the file")
-            fp.seek(0)
-            model = joblib.load(fp)
-            logger.info("Successfully loaded the model")
-
-        return model.predict(profile_to_pred_prep)
-    except ClientError as e:
-        error_code = e.response["Error"]["Code"]
-        error_message = e.response["Error"]["Message"]
-        logger.error(f"ClientError: {error_code} - {error_message}")
-        st.error(f"AWS Error: {error_code} - {error_message}")
-        if error_code == "AccessDenied":
-            st.error("Access Denied. Please check your AWS permissions.")
-        elif error_code == "NoSuchBucket":
-            st.error(f"The bucket {bucket_name} does not exist.")
-        elif error_code == "NoSuchKey":
-            st.error(f"The key {key} does not exist in the bucket.")
+# Load Lottie animation
+def load_lottieurl(url: str):
+    r = requests.get(url)
+    if r.status_code != 200:
         return None
+    return r.json()
+
+lottie_loading_an = load_lottieurl(
+    "https://assets3.lottiefiles.com/packages/lf20_szlepvdh.json"
+)
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Prediction function (with mock prediction for testing)
+def make_prediction(profile_data):
+    try:
+        logger.info("Simulating model prediction (mock mode)")
+        
+        # Example mock prediction: Always returns 0 (approved)
+        mock_prediction = [0]  # You can change this to 1 for testing rejection
+        
+        logger.info(f"Mock prediction made: {mock_prediction}")
+        return mock_prediction
     except Exception as e:
         logger.error(f"Unexpected error: {str(e)}")
         st.error(f"An unexpected error occurred: {str(e)}")
         return None
 
+# Streamlit interface
+st.title("Credit Card Approval Prediction")
+
+# Input features for prediction (example placeholders)
+age = st.number_input("Enter Age", min_value=18, max_value=100, step=1)
+income = st.number_input("Enter Monthly Income", min_value=0.0, step=0.1)
+debt = st.number_input("Enter Debt Amount", min_value=0.0, step=0.1)
+
+# Add a button to trigger prediction with a unique key
+predict_bt = st.button("Predict", key="predict_button")
 
 if predict_bt:
-    with st_lottie_spinner(
-        lottie_loading_an, quality="high", height="200px", width="200px"
-    ):
-        final_pred = make_prediction()
+    profile_to_pred_prep = [[age, income, debt]]  # Example placeholder
+    with st_lottie_spinner(lottie_loading_an, quality="high", height="200px", width="200px"):
+        final_pred = make_prediction(profile_to_pred_prep)
     if final_pred is not None:
         if final_pred[0] == 0:
             st.success("## You have been approved for a credit card")
@@ -619,6 +623,64 @@ if predict_bt:
         elif final_pred[0] == 1:
             st.error("## Unfortunately, you have not been approved for a credit card")
     else:
-        st.error(
-            "Unable to make a prediction due to an error. Please check the logs and try again."
-        )
+        st.error("Unable to make a prediction. Please check the logs and try again.")
+
+
+# def make_prediction():
+#     bucket_name = "creditapplipred"
+#     key = "gradient_boosting_model.sav"
+
+#     # client = boto3.client(
+#     #     "s3",
+#     #     # aws_access_key_id=st.secrets["access_key"],
+#     #     # aws_secret_access_key=st.secrets["secret_access_key"],
+#     # )
+
+#     try:
+#         # Test S3 access
+#         logger.info(f"Attempting to list objects in {bucket_name}")
+#         response = client.list_objects_v2(Bucket=bucket_name, MaxKeys=1)
+#         logger.info("Successfully listed bucket contents")
+
+#         logger.info(f"Attempting to download {key} from {bucket_name}")
+#         with tempfile.TemporaryFile() as fp:
+#             client.download_fileobj(Fileobj=fp, Bucket=bucket_name, Key=key)
+#             logger.info("Successfully downloaded the file")
+#             fp.seek(0)
+#             model = joblib.load(fp)
+#             logger.info("Successfully loaded the model")
+
+#         return model.predict(profile_to_pred_prep)
+#     except ClientError as e:
+#         error_code = e.response["Error"]["Code"]
+#         error_message = e.response["Error"]["Message"]
+#         logger.error(f"ClientError: {error_code} - {error_message}")
+#         st.error(f"AWS Error: {error_code} - {error_message}")
+#         if error_code == "AccessDenied":
+#             st.error("Access Denied. Please check your AWS permissions.")
+#         elif error_code == "NoSuchBucket":
+#             st.error(f"The bucket {bucket_name} does not exist.")
+#         elif error_code == "NoSuchKey":
+#             st.error(f"The key {key} does not exist in the bucket.")
+#         return None
+#     except Exception as e:
+#         logger.error(f"Unexpected error: {str(e)}")
+#         st.error(f"An unexpected error occurred: {str(e)}")
+#         return None
+
+
+# if predict_bt:
+#     with st_lottie_spinner(
+#         lottie_loading_an, quality="high", height="200px", width="200px"
+#     ):
+#         final_pred = make_prediction()
+#     if final_pred is not None:
+#         if final_pred[0] == 0:
+#             st.success("## You have been approved for a credit card")
+#             st.balloons()
+#         elif final_pred[0] == 1:
+#             st.error("## Unfortunately, you have not been approved for a credit card")
+#     else:
+#         st.error(
+#             "Unable to make a prediction due to an error. Please check the logs and try again."
+#         )

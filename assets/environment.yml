@@ -1,6 +1,8 @@
-name: /Users/sternsemasuka/Desktop/ML/Project/Credit-card-approval-prediction-classification/.Credit_approval_env
+# name: /Users/sternsemasuka/Desktop/ML/Project/Credit-card-approval-prediction-classification/.Credit_approval_env
+name: credit_approval_env
 channels:
   - conda-forge
+  - defaults
 dependencies:
   - abseil-cpp=20210324.2=hbdafb3b_0
   - altair=4.2.0=pyhd8ed1ab_1
@@ -231,3 +233,4 @@ dependencies:
   - zlib=1.2.11=hee7b306_1013
   - zstd=1.5.2=h861e0a7_0
 prefix: /Users/sternsemasuka/Desktop/ML/Project/Credit-card-approval-prediction-classification/.Credit_approval_env
+ 
